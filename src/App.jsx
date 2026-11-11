@@ -1,7 +1,7 @@
 import "./App.css";
 import { BrowserRouter, Routes, Route } from "react-router";
 import Body from "./components/Layout/Body";
-import LogIn from "./components/Auth/Login";
+import LogIn from "./components/Auth/LogIn";
 import SignUp from "./components/Auth/SignUp";
 import LogOut from "./components/Auth/LogOut";
 
