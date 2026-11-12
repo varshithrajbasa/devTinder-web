@@ -18,7 +18,13 @@ const LogOut = () => {
         logoutUser();
     }, []);
 
-    return <div>Logout Successfull</div>;
+    return (
+        <div className="card bg-base-300 w-96 shadow-sm mx-auto my-10">
+            <div className="card-body items-center text-center">
+                <h1 className="card-title">Logout Successfull</h1>
+            </div>
+        </div>
+    );
 };
 
 export default LogOut;

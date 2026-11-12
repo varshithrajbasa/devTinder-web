@@ -3,12 +3,13 @@ import { Outlet, useLocation } from "react-router";
 import NavBar from "./NavBar";
 import Footer from "./Footer";
 import axiosInstance from "../../api/apiClient";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { addUser } from "../../utils/userSlice";
 
 const Body = () => {
     const dispatch = useDispatch();
     const location = useLocation();
+    const user = useSelector((store) => store.user);
 
     const fetchProfile = async () => {
         try {
@@ -20,7 +21,7 @@ const Body = () => {
     };
 
     useEffect(() => {
-        if (location.pathname !== "/login") fetchProfile();
+        if (location.pathname !== "/login" && !user) fetchProfile();
     }, []);
 
     return (

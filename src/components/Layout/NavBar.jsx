@@ -10,12 +10,9 @@ const NavBar = () => {
     return (
         <div className="navbar bg-base-300 shadow-sm">
             <div className="flex-1">
-                <a
-                    className="btn btn-ghost text-xl"
-                    onClick={() => navigate("/")}
-                >
+                <Link className="btn btn-ghost text-xl" to="/">
                     Dev Tinder
-                </a>
+                </Link>
             </div>
             <div className="flex-none">
                 {user ? (
@@ -25,14 +22,10 @@ const NavBar = () => {
                                 <summary>{user.firstName}</summary>
                                 <ul className="bg-base-200 rounded-t-none p-2">
                                     <li>
-                                        <a onClick={() => navigate("/profile")}>
-                                            Profile
-                                        </a>
+                                        <Link to="/profile">Profile</Link>
                                     </li>
                                     <li>
-                                        <a onClick={() => navigate("/logout")}>
-                                            Logout
-                                        </a>
+                                        <Link to="= naviga/logout">Logout</Link>
                                     </li>
                                 </ul>
                             </details>

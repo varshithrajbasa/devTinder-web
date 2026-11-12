@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "../../api/apiClient";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { useDispatch } from "react-redux";
 import { addUser } from "../../utils/userSlice";
 
@@ -10,9 +10,20 @@ const LogIn = () => {
 
     const [emailId, setEmailId] = useState("");
     const [password, setPassword] = useState("");
+    const [error, setError] = useState({ email: "", password: "", api: "" });
+
+    useEffect(() => {
+        //check the emailid pattern and password length 8 and max 20 and check on debounce, like once the typing is stopped
+    }, [emailId, password]);
 
     const handleLogin = async (e) => {
         e.preventDefault();
+        if (!emailId.trim()) {
+            setError({ ...error, emailId: "Email is required" });
+        }
+        if (!password.trim()) {
+            setError({ ...error, password: "Passwod is required" });
+        }
         try {
             const response = await axios.post("/auth/login", {
                 emailId,
@@ -22,6 +33,7 @@ const LogIn = () => {
             navigate("/");
         } catch (error) {
             console.error("Login error:", error);
+            setError({ ...error, api: error.response.data.message });
         }
     };
 
@@ -35,7 +47,6 @@ const LogIn = () => {
                 <input
                     id="email"
                     type="email"
-                    pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
                     value={emailId}
                     onChange={(e) => setEmailId(e.target.value)}
                     autoComplete="email"
@@ -55,17 +66,19 @@ const LogIn = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                 />
+                {error.api && (
+                    <div role="alert" className="alert alert-error alert-soft">
+                        <span>{error.api}</span>
+                    </div>
+                )}
                 <button className="btn btn-primary mt-4" onClick={handleLogin}>
                     Login
                 </button>
                 <p className="mt-4 text-center">
                     Don't have an account?{" "}
-                    <a
-                        onClick={() => navigate("/signup")}
-                        className="link link-primary"
-                    >
+                    <Link to="/signup" className="link link-primary">
                         Sign up
-                    </a>
+                    </Link>
                 </p>
             </fieldset>
         </div>
