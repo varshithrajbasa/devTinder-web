@@ -1,9 +1,12 @@
-import {useState} from "react";
+import { useState } from "react";
 import axios from "../../api/apiClient";
 import { useNavigate } from "react-router";
+import { useDispatch } from "react-redux";
+import { addUser } from "../../utils/userSlice";
 
 const LogIn = () => {
     const navigate = useNavigate();
+    const dispatch = useDispatch();
 
     const [emailId, setEmailId] = useState("");
     const [password, setPassword] = useState("");
@@ -11,8 +14,12 @@ const LogIn = () => {
     const handleLogin = async (e) => {
         e.preventDefault();
         try {
-            const response = await axios.post('/auth/login', { emailId, password }, {withCredentials: true});
-            console.log(response.data);
+            const response = await axios.post(
+                "/auth/login",
+                { emailId, password },
+                { withCredentials: true },
+            );
+            dispatch(addUser(response.data.user));
             navigate("/");
         } catch (error) {
             console.error("Login error:", error);
@@ -54,7 +61,10 @@ const LogIn = () => {
                 </button>
                 <p className="mt-4 text-center">
                     Don't have an account?{" "}
-                    <a onClick={() => navigate("/signup")} className="link link-primary">
+                    <a
+                        onClick={() => navigate("/signup")}
+                        className="link link-primary"
+                    >
                         Sign up
                     </a>
                 </p>
