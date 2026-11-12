@@ -14,11 +14,10 @@ const LogIn = () => {
     const handleLogin = async (e) => {
         e.preventDefault();
         try {
-            const response = await axios.post(
-                "/auth/login",
-                { emailId, password },
-                { withCredentials: true },
-            );
+            const response = await axios.post("/auth/login", {
+                emailId,
+                password,
+            });
             dispatch(addUser(response.data.user));
             navigate("/");
         } catch (error) {
