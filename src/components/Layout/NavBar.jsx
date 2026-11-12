@@ -1,6 +1,6 @@
 import React from "react";
 import { useSelector } from "react-redux";
-import { useNavigate, useLocation } from "react-router";
+import { useNavigate, useLocation, Link } from "react-router";
 
 const NavBar = () => {
     const user = useSelector((store) => store.user);
@@ -25,7 +25,7 @@ const NavBar = () => {
                                         <Link to="/profile">Profile</Link>
                                     </li>
                                     <li>
-                                        <Link to="= naviga/logout">Logout</Link>
+                                        <Link to="/logout">Logout</Link>
                                     </li>
                                 </ul>
                             </details>
