@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { Outlet, useLocation } from "react-router";
 import NavBar from "./NavBar";
 import Footer from "./Footer";
@@ -21,7 +21,8 @@ const Body = () => {
     };
 
     useEffect(() => {
-        if (location.pathname !== "/login" && !user) fetchProfile();
+        if (!["/login", "/signup"].includes(location.pathname) && !user)
+            fetchProfile();
     }, []);
 
     return (

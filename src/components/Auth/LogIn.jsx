@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import axios from "../../api/apiClient";
 import { Link, useNavigate } from "react-router";
 import { useDispatch } from "react-redux";
 import { addUser } from "../../utils/userSlice";
+import { emailValidator, passwordValidator } from "../../utils/validators";
 
 const LogIn = () => {
     const navigate = useNavigate();
@@ -10,77 +11,184 @@ const LogIn = () => {
 
     const [emailId, setEmailId] = useState("");
     const [password, setPassword] = useState("");
-    const [error, setError] = useState({ email: "", password: "", api: "" });
+    const [errors, setErrors] = useState({
+        emailId: "",
+        password: "",
+        api: "",
+    });
+    const [isLoading, setIsLoading] = useState(false);
 
-    useEffect(() => {
-        //check the emailid pattern and password length 8 and max 20 and check on debounce, like once the typing is stopped
-    }, [emailId, password]);
+    const handleEmailChange = (e) => {
+        setEmailId(e.target.value);
+        if (errors.emailId || errors.api) {
+            setErrors((prev) => ({ ...prev, emailId: "", api: "" }));
+        }
+    };
+
+    const handlePasswordChange = (e) => {
+        setPassword(e.target.value);
+        if (errors.password || errors.api) {
+            setErrors((prev) => ({ ...prev, password: "", api: "" }));
+        }
+    };
+
+    const handleEmailBlur = () => {
+        if (emailId.trim()) {
+            const isEmailValid = emailValidator(emailId);
+            if (isEmailValid !== true) {
+                setErrors((prev) => ({ ...prev, emailId: isEmailValid }));
+            }
+        }
+    };
+
+    const handlePasswordBlur = () => {
+        if (password) {
+            const isPasswordValid = passwordValidator(password);
+            if (isPasswordValid !== true) {
+                setErrors((prev) => ({ ...prev, password: isPasswordValid }));
+            }
+        }
+    };
 
     const handleLogin = async (e) => {
         e.preventDefault();
-        if (!emailId.trim()) {
-            setError({ ...error, emailId: "Email is required" });
+
+        const emailValidation = emailValidator(emailId);
+        const passwordValidation = passwordValidator(password);
+
+        const newErrors = {
+            emailId: emailValidation === true ? "" : emailValidation,
+            password: passwordValidation === true ? "" : passwordValidation,
+            api: "",
+        };
+
+        if (newErrors.emailId || newErrors.password) {
+            setErrors(newErrors);
+            return;
         }
-        if (!password.trim()) {
-            setError({ ...error, password: "Passwod is required" });
-        }
+
+        setIsLoading(true);
         try {
             const response = await axios.post("/auth/login", {
-                emailId,
+                emailId: emailId.trim(),
                 password,
             });
-            dispatch(addUser(response.data.user));
+            const userData =
+                response.data?.user || response.data?.data || response.data;
+            dispatch(addUser(userData));
             navigate("/");
-        } catch (error) {
-            console.error("Login error:", error);
-            setError({ ...error, api: error.response.data.message });
+        } catch (err) {
+            console.error("Login error:", err);
+            const apiMessage =
+                err.response?.data?.message ||
+                (typeof err.response?.data === "string"
+                    ? err.response?.data
+                    : "") ||
+                err.message ||
+                "Login failed. Please check your credentials.";
+            setErrors((prev) => ({ ...prev, api: apiMessage }));
+        } finally {
+            setIsLoading(false);
         }
     };
 
     return (
-        <div className="card bg-base-300 w-80 shadow-sm mx-auto my-10">
-            <h1 className="card-title justify-center mt-4">Login</h1>
-            <fieldset className="fieldset p-4">
-                <label className="label" htmlFor="email">
-                    Email
-                </label>
-                <input
-                    id="email"
-                    type="email"
-                    value={emailId}
-                    onChange={(e) => setEmailId(e.target.value)}
-                    autoComplete="email"
-                    className="input"
-                    placeholder="Email"
-                />
-                <label className="label" htmlFor="password">
-                    Password
-                </label>
-                <input
-                    id="password"
-                    type="password"
-                    className="input"
-                    placeholder="Password"
-                    minLength={8}
-                    maxLength={20}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                />
-                {error.api && (
-                    <div role="alert" className="alert alert-error alert-soft">
-                        <span>{error.api}</span>
-                    </div>
-                )}
-                <button className="btn btn-primary mt-4" onClick={handleLogin}>
+        <div className="card bg-base-300 w-full max-w-sm shadow-sm mx-auto my-10">
+            <div className="card-body">
+                <h1 className="card-title justify-center text-2xl font-bold">
                     Login
-                </button>
-                <p className="mt-4 text-center">
-                    Don't have an account?{" "}
-                    <Link to="/signup" className="link link-primary">
-                        Sign up
-                    </Link>
-                </p>
-            </fieldset>
+                </h1>
+                <form
+                    onSubmit={handleLogin}
+                    className="flex flex-col gap-3 mt-2"
+                >
+                    <div className="flex flex-col">
+                        <label
+                            className="label label-text font-medium"
+                            htmlFor="email"
+                        >
+                            Email
+                        </label>
+                        <input
+                            id="email"
+                            type="email"
+                            value={emailId}
+                            onChange={handleEmailChange}
+                            onBlur={handleEmailBlur}
+                            autoComplete="email"
+                            className={`input input-bordered w-full ${
+                                errors.emailId ? "input-error" : ""
+                            }`}
+                            placeholder="Email"
+                        />
+                        {errors.emailId && (
+                            <span className="text-error text-xs mt-1">
+                                {errors.emailId}
+                            </span>
+                        )}
+                    </div>
+
+                    <div className="flex flex-col">
+                        <label
+                            className="label label-text font-medium"
+                            htmlFor="password"
+                        >
+                            Password
+                        </label>
+                        <input
+                            id="password"
+                            type="password"
+                            className={`input input-bordered w-full ${
+                                errors.password ? "input-error" : ""
+                            }`}
+                            placeholder="Password"
+                            value={password}
+                            onChange={handlePasswordChange}
+                            onBlur={handlePasswordBlur}
+                            autoComplete="current-password"
+                        />
+                        {errors.password && (
+                            <span className="text-error text-xs mt-1">
+                                {errors.password}
+                            </span>
+                        )}
+                    </div>
+
+                    {errors.api && (
+                        <div
+                            role="alert"
+                            className="alert alert-error alert-soft text-sm py-2 justify-center"
+                        >
+                            <span>{errors.api}</span>
+                        </div>
+                    )}
+
+                    <button
+                        className="btn btn-primary mt-2 w-full"
+                        type="submit"
+                        disabled={isLoading}
+                    >
+                        {isLoading ? (
+                            <>
+                                <span className="loading loading-spinner loading-xs"></span>
+                                Logging in...
+                            </>
+                        ) : (
+                            "Login"
+                        )}
+                    </button>
+
+                    <p className="mt-2 text-center text-sm">
+                        Don't have an account?{" "}
+                        <Link
+                            to="/signup"
+                            className="link link-primary font-medium"
+                        >
+                            Sign up
+                        </Link>
+                    </p>
+                </form>
+            </div>
         </div>
     );
 };

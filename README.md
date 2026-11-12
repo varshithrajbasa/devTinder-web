@@ -14,6 +14,9 @@
 - Install CORS in backend with config origin and redentials and on frontend withCredetials config
 - Install Redux Toolkit
 - Install React redux and configure store, add provider and create slice
+- Shouldn't access routes without login
+- Implement Login, Logout, Signup Pages
+- Implement Profile
 
 ## Routes
 
