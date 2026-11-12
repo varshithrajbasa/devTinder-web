@@ -10,7 +10,12 @@ const NavBar = () => {
     return (
         <div className="navbar bg-base-300 shadow-sm">
             <div className="flex-1">
-                <a className="btn btn-ghost text-xl">Dev Tinder</a>
+                <a
+                    className="btn btn-ghost text-xl"
+                    onClick={() => navigate("/")}
+                >
+                    Dev Tinder
+                </a>
             </div>
             <div className="flex-none">
                 {user ? (
@@ -20,10 +25,14 @@ const NavBar = () => {
                                 <summary>{user.firstName}</summary>
                                 <ul className="bg-base-200 rounded-t-none p-2">
                                     <li>
-                                        <a>Link 1</a>
+                                        <a onClick={() => navigate("/profile")}>
+                                            Profile
+                                        </a>
                                     </li>
                                     <li>
-                                        <a>Link 2</a>
+                                        <a onClick={() => navigate("/logout")}>
+                                            Logout
+                                        </a>
                                     </li>
                                 </ul>
                             </details>
@@ -34,9 +43,9 @@ const NavBar = () => {
                         className="btn btn-primary"
                         onClick={() =>
                             navigate(
-                                location.pathname === "/signup"
-                                    ? "/login"
-                                    : "/signup",
+                                location.pathname === "/login"
+                                    ? "/signup"
+                                    : "/login",
                             )
                         }
                     >
