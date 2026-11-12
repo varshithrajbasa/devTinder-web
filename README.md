@@ -10,6 +10,8 @@
 - Create BrowserRouter > Routes > Route =/ Body > RouteChildren
 - Create an Outlet in Body Component
 - Create Footer
+- Install axios
+- Install CORS in backend with config origin and redentials and on frontend withCredetials config
 
 ## Routes
 
