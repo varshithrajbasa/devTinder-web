@@ -1,9 +1,24 @@
-import React from 'react'
+import React, { useEffect } from "react";
+import { useDispatch } from "react-redux";
+import { useNavigate } from "react-router";
+import { removeUser } from "../../utils/userSlice";
+import axiosInstance from "../../api/apiClient";
 
 const LogOut = () => {
-  return (
-    <div>LogOut</div>
-  )
-}
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
 
-export default LogOut
+    const logoutUser = async () => {
+        await axiosInstance.post("/auth/logout");
+        dispatch(removeUser());
+        navigate("/login");
+    };
+
+    useEffect(() => {
+        logoutUser();
+    }, []);
+
+    return <div>Logout Successfull</div>;
+};
+
+export default LogOut;
