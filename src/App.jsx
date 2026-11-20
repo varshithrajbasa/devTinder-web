@@ -6,6 +6,9 @@ import SignUp from "./components/Auth/SignUp";
 import LogOut from "./components/Auth/LogOut";
 import { Provider } from "react-redux";
 import appStore from "./utils/appStore";
+import Profile from "./components/Profile/Profile";
+import EditProfile from "./components/Profile/EditProfile";
+import ChangePassword from "./components/Profile/ChangePassword";
 
 function App() {
     return (
@@ -17,6 +20,15 @@ function App() {
                             <Route path="/login" element={<LogIn />} />
                             <Route path="/signup" element={<SignUp />} />
                             <Route path="/logout" element={<LogOut />} />
+                            <Route path="/profile" element={<Profile />} />
+                            <Route
+                                path="/profile/edit"
+                                element={<EditProfile />}
+                            />
+                            <Route
+                                path="/profile/change-password"
+                                element={<ChangePassword />}
+                            />
                         </Route>
                     </Routes>
                 </BrowserRouter>
