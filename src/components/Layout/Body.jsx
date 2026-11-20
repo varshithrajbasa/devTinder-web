@@ -26,11 +26,13 @@ const Body = () => {
     }, []);
 
     return (
-        <>
+        <div className="min-h-screen flex flex-col bg-base-100">
             <NavBar />
-            <Outlet />
+            <main className="flex-1 w-full flex flex-col">
+                <Outlet />
+            </main>
             <Footer />
-        </>
+        </div>
     );
 };
 

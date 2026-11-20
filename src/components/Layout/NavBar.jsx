@@ -7,10 +7,10 @@ const NavBar = () => {
     const location = useLocation();
 
     return (
-        <div className="navbar bg-base-300 shadow-sm">
+        <div className="navbar bg-base-300 shadow-md sticky top-0 z-50 h-16">
             <div className="flex-1">
                 <Link className="btn btn-ghost text-xl" to="/">
-                    Dev Tinder
+                    Dev Connect
                 </Link>
             </div>
             <div className="flex-none">

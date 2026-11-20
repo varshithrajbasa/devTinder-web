@@ -1,4 +1,4 @@
-# DevTinder
+# Dev Connect
 
 - Create React + Vite project
 - Remove unanted code
@@ -20,9 +20,12 @@
 
 ## Routes
 
-| Route     | Page        |
-| --------- | ----------- |
-| `/`       | Home Page   |
-| `/login`  | Login Page  |
-| `/signup` | Signup Page |
-| `/logout` | Logout Page |
+| Route                      | Page            |
+| -------------------------- | --------------- |
+| `/`                        | Home Page       |
+| `/login`                   | Login Page      |
+| `/signup`                  | Signup Page     |
+| `/logout`                  | Logout Page     |
+| `/profile`                 | Profile Page    |
+| `/profile/edit`            | Edit Profile    |
+| `/profile/change-password` | Change Password |

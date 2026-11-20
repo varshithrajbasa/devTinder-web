@@ -1,9 +1,7 @@
 @import "tailwindcss";
 @plugin "daisyui" {
     themes:
-        light --default,
-        dark --prefersdark,
-        retro;
+        light --default
 }
 
 input[type="number"]::-webkit-outer-spin-button,

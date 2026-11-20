@@ -48,6 +48,24 @@ const nameValidator = (name, fieldName = "Name") => {
     return true;
 };
 
+const yearOfBirthValidator = (yearOfBirth) => {
+    if (yearOfBirth === "" || yearOfBirth === null || yearOfBirth === undefined) {
+        return "Year of birth is required.";
+    }
+    const year = Number(yearOfBirth);
+    const currentYear = new Date().getFullYear();
+    if (!Number.isInteger(year) || String(yearOfBirth).trim().length !== 4) {
+        return "Please enter a valid 4-digit birth year.";
+    }
+    if (year > currentYear - 10) {
+        return `You must be at least 10 years old (born in ${currentYear - 10} or earlier).`;
+    }
+    if (year < currentYear - 80) {
+        return `Please enter a valid birth year (after ${currentYear - 80}).`;
+    }
+    return true;
+};
+
 const ageValidator = (age) => {
     if (age === "" || age === null || age === undefined) {
         return true;
@@ -56,20 +74,20 @@ const ageValidator = (age) => {
     if (Number.isNaN(num) || !Number.isInteger(num)) {
         return "Age must be a valid whole number.";
     }
-    if (num < 18) {
-        return "Age must be at least 18.";
+    if (num < 10) {
+        return "Age must be at least 1..";
     }
-    if (num > 100) {
-        return "Please enter a valid age (under 100).";
+    if (num > 80) {
+        return "Please enter a valid age (under 80).";
     }
     return true;
 };
 
 const genderValidator = (gender) => {
     if (!gender || gender === "Select One") {
-        return true;
+        return "Gender is required.";
     }
-    const validGenders = ["Male", "Female", "Others", "male", "female", "others"];
+    const validGenders = ["Male", "Female", "Others"];
     if (!validGenders.includes(gender)) {
         return "Please select a valid gender.";
     }
@@ -92,10 +110,22 @@ const skillsValidator = (skills) => {
     return true;
 };
 
+const confirmPasswordValidator = (password, confirmPassword) => {
+    if (!confirmPassword) {
+        return "Please re-enter your password.";
+    }
+    if (password !== confirmPassword) {
+        return "Passwords do not match.";
+    }
+    return true;
+};
+
 export {
     emailValidator,
     passwordValidator,
+    confirmPasswordValidator,
     nameValidator,
+    yearOfBirthValidator,
     ageValidator,
     genderValidator,
     skillsValidator,

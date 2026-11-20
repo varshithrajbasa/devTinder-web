@@ -1,43 +1,98 @@
 import { useState } from "react";
 import axios from "../../api/apiClient";
 import { Link, useNavigate } from "react-router";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { addUser } from "../../utils/userSlice";
 import {
     emailValidator,
     passwordValidator,
+    confirmPasswordValidator,
     nameValidator,
-    ageValidator,
+    yearOfBirthValidator,
     genderValidator,
     skillsValidator,
 } from "../../utils/validators";
+import Password from "../shared/Password";
+import Input from "../shared/Input";
 
-const SignUp = () => {
+const SignUp = ({ isEdit = false, user: propUser = null, onSuccess }) => {
     const navigate = useNavigate();
     const dispatch = useDispatch();
+    const reduxUser = useSelector((store) => store.user);
+    const currentUser = propUser || (isEdit ? reduxUser : null);
 
-    const [formData, setFormData] = useState({
-        firstName: "",
-        lastName: "",
-        emailId: "",
+    const getInitialYear = (usr) => {
+        if (!usr) return "";
+        if (usr.yearOfBirth) return String(usr.yearOfBirth);
+        if (usr.age) return String(new Date().getFullYear() - usr.age);
+        return "";
+    };
+
+    const [formData, setFormData] = useState(() => ({
+        firstName: currentUser?.firstName || "",
+        lastName: currentUser?.lastName || "",
+        emailId: currentUser?.emailId || "",
         password: "",
-        age: "",
-        gender: "Select One",
-        skills: "",
-    });
+        re_password: "",
+        yearOfBirth: getInitialYear(currentUser),
+        gender: currentUser?.gender || "",
+        skills: Array.isArray(currentUser?.skills)
+            ? currentUser.skills.join(", ")
+            : currentUser?.skills || "",
+        photoUrl: currentUser?.photoUrl || "",
+        about: currentUser?.about || "",
+    }));
 
     const [errors, setErrors] = useState({
         firstName: "",
         lastName: "",
         emailId: "",
         password: "",
-        age: "",
+        re_password: "",
+        yearOfBirth: "",
         gender: "",
         skills: "",
+        photoUrl: "",
+        about: "",
         api: "",
     });
 
     const [isLoading, setIsLoading] = useState(false);
+    const [successMsg, setSuccessMsg] = useState("");
+
+    if (isEdit && !currentUser) {
+        return (
+            <div className="min-h-[70vh] flex items-center justify-center px-4">
+                <div className="card bg-base-300 w-full max-w-md shadow-xl text-center p-8 border border-base-200">
+                    <div className="flex justify-center mb-4 text-warning">
+                        <svg
+                            className="w-16 h-16"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                            />
+                        </svg>
+                    </div>
+                    <h2 className="text-2xl font-bold mb-2">Access Denied</h2>
+                    <p className="text-base-content/70 mb-6">
+                        You need to be logged in to edit your profile.
+                    </p>
+                    <Link
+                        to="/login"
+                        className="btn btn-primary w-full shadow-md"
+                    >
+                        Login Now
+                    </Link>
+                </div>
+            </div>
+        );
+    }
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -45,6 +100,9 @@ const SignUp = () => {
 
         if (errors[name] || errors.api) {
             setErrors((prev) => ({ ...prev, [name]: "", api: "" }));
+        }
+        if (successMsg) {
+            setSuccessMsg("");
         }
     };
 
@@ -56,13 +114,28 @@ const SignUp = () => {
             validationResult = nameValidator(value, "First Name");
         } else if (name === "lastName" && value.trim()) {
             validationResult = nameValidator(value, "Last Name");
-        } else if (name === "emailId" && value.trim()) {
+        } else if (name === "emailId" && !isEdit) {
             validationResult = emailValidator(value);
-        } else if (name === "password" && value) {
+        } else if (name === "password" && !isEdit) {
             validationResult = passwordValidator(value);
-        } else if (name === "age" && value !== "") {
-            validationResult = ageValidator(value);
-        } else if (name === "gender" && value !== "Select One") {
+            if (formData.re_password) {
+                const matchResult = confirmPasswordValidator(
+                    value,
+                    formData.re_password,
+                );
+                setErrors((prev) => ({
+                    ...prev,
+                    re_password: matchResult === true ? "" : matchResult,
+                }));
+            }
+        } else if (name === "re_password" && !isEdit) {
+            validationResult = confirmPasswordValidator(
+                formData.password,
+                value,
+            );
+        } else if (name === "yearOfBirth") {
+            validationResult = yearOfBirthValidator(value);
+        } else if (name === "gender" && value) {
             validationResult = genderValidator(value);
         } else if (name === "skills" && value.trim()) {
             validationResult = skillsValidator(value);
@@ -73,27 +146,39 @@ const SignUp = () => {
         }
     };
 
-    const handleSignUp = async (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         const fnError = nameValidator(formData.firstName, "First Name");
-        const lnError = formData.lastName.trim()
-            ? nameValidator(formData.lastName, "Last Name")
-            : true;
-        const emailError = emailValidator(formData.emailId);
-        const passwordError = passwordValidator(formData.password);
-        const ageError = ageValidator(formData.age);
+        const lnError = nameValidator(formData.lastName, "Last Name");
+        const yobError = yearOfBirthValidator(formData.yearOfBirth);
         const genderError = genderValidator(formData.gender);
         const skillsError = skillsValidator(formData.skills);
+
+        let emailError = true;
+        let passwordError = true;
+        let rePasswordError = true;
+
+        if (!isEdit) {
+            emailError = emailValidator(formData.emailId);
+            passwordError = passwordValidator(formData.password);
+            rePasswordError = confirmPasswordValidator(
+                formData.password,
+                formData.re_password,
+            );
+        }
 
         const newErrors = {
             firstName: fnError === true ? "" : fnError,
             lastName: lnError === true ? "" : lnError,
             emailId: emailError === true ? "" : emailError,
             password: passwordError === true ? "" : passwordError,
-            age: ageError === true ? "" : ageError,
+            re_password: rePasswordError === true ? "" : rePasswordError,
+            yearOfBirth: yobError === true ? "" : yobError,
             gender: genderError === true ? "" : genderError,
             skills: skillsError === true ? "" : skillsError,
+            photoUrl: "",
+            about: "",
             api: "",
         };
 
@@ -104,127 +189,161 @@ const SignUp = () => {
         }
 
         setIsLoading(true);
+        setErrors((prev) => ({ ...prev, api: "" }));
+
         try {
-            const payload = {
-                firstName: formData.firstName.trim(),
-                lastName: formData.lastName.trim(),
-                emailId: formData.emailId.trim(),
-                password: formData.password,
-            };
+            const fields = [
+                "firstName",
+                "lastName",
+                "yearOfBirth",
+                "skills",
+                "gender",
+                "photoUrl",
+                "about",
+            ];
+            const payload = {};
+            fields.forEach((field) => {
+                if (field === "skills") {
+                    payload.skills = formData.skills
+                        .split(",")
+                        .map((s) => s.trim())
+                        .filter(Boolean);
+                } else if (field === "yearOfBirth") {
+                    payload.yearOfBirth = Number(formData.yearOfBirth);
+                } else if (formData[field] !== undefined) {
+                    payload[field] = formData[field].trim();
+                }
+            });
+            if (isEdit) {
+                let response;
+                try {
+                    response = await axios.patch("/profile/edit", payload);
+                } catch (error) {
+                    throw error;
+                }
 
-            if (formData.age) {
-                payload.age = Number(formData.age);
-            }
+                const updatedUser = response.data?.user ||
+                    response.data?.data || {
+                        ...currentUser,
+                        ...payload,
+                    };
 
-            if (formData.gender && formData.gender !== "Select One") {
-                payload.gender = formData.gender.toLowerCase();
-            }
+                dispatch(addUser(updatedUser));
+                setSuccessMsg("Profile updated successfully!");
 
-            if (formData.skills && formData.skills.trim()) {
-                payload.skills = formData.skills
-                    .split(",")
-                    .map((s) => s.trim())
-                    .filter(Boolean);
-            }
-
-            const response = await axios.post("/auth/signup", payload);
-            const userData =
-                response.data?.user || response.data?.data || response.data;
-
-            if (
-                userData &&
-                (userData._id || userData.emailId || userData.firstName)
-            ) {
-                dispatch(addUser(userData));
-                navigate("/");
+                if (onSuccess) {
+                    onSuccess(updatedUser);
+                } else {
+                    setTimeout(() => {
+                        navigate("/profile");
+                    }, 1200);
+                }
             } else {
-                navigate("/login");
+                payload.emailId = formData.emailId;
+                payload.password = formData.password;
+                const response = await axios.post("/auth/signup", payload);
+                const userData = response.data?.user;
+
+                if (userData) {
+                    dispatch(addUser(userData));
+                    navigate("/");
+                } else {
+                    navigate("/login");
+                }
             }
         } catch (err) {
-            console.error("Signup error:", err);
+            console.error(
+                `${isEdit ? "Update profile" : "Signup"} error:`,
+                err,
+            );
             const apiMessage =
                 err.response?.data?.message ||
                 (typeof err.response?.data === "string"
                     ? err.response?.data
                     : "") ||
                 err.message ||
-                "Registration failed. Please try again.";
+                `${isEdit ? "Profile update" : "Registration"} failed. Please try again.`;
             setErrors((prev) => ({ ...prev, api: apiMessage }));
         } finally {
             setIsLoading(false);
         }
     };
 
+    const maxBirthYear = new Date().getFullYear() - 10;
+
     return (
-        <div className="card bg-base-300 w-full max-w-md shadow-sm mx-auto my-6">
-            <div className="card-body">
+        <div className="card bg-base-300 w-full max-w-lg shadow-xl mx-auto my-6 border border-base-200">
+            <div className="card-body p-6">
+                {isEdit && (
+                    <Link
+                        to="/profile"
+                        className="btn btn-ghost btn-sm gap-2 self-start text-base-content/70 hover:text-base-content -mt-2 -ml-2"
+                    >
+                        <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                            />
+                        </svg>
+                        Back to Profile
+                    </Link>
+                )}
+
                 <h1 className="card-title justify-center text-2xl font-bold">
-                    Sign Up
+                    {isEdit ? "Edit Profile" : "Sign Up"}
                 </h1>
+                <p className="text-center text-xs text-base-content/60 -mt-1">
+                    {isEdit
+                        ? "Update your Dev Connect profile information"
+                        : "Join the Dev Connect developer community"}
+                </p>
+
                 <form
-                    onSubmit={handleSignUp}
-                    className="flex flex-col gap-3 mt-2"
+                    onSubmit={handleSubmit}
+                    className="flex flex-col gap-3 mt-3"
                 >
                     <div className="flex gap-3">
-                        <div className="flex flex-col w-1/2">
-                            <label
-                                htmlFor="firstName"
-                                className="label label-text font-medium"
-                            >
-                                First Name <span className="text-error">*</span>
-                            </label>
-                            <input
-                                type="text"
-                                id="firstName"
-                                name="firstName"
-                                value={formData.firstName}
-                                onChange={handleChange}
-                                onBlur={handleBlur}
-                                placeholder="John"
-                                className={`input input-bordered w-full ${
-                                    errors.firstName ? "input-error" : ""
-                                }`}
-                            />
-                            {errors.firstName && (
-                                <span className="text-error text-xs mt-1">
-                                    {errors.firstName}
-                                </span>
-                            )}
-                        </div>
-
-                        <div className="flex flex-col w-1/2">
-                            <label
-                                htmlFor="lastName"
-                                className="label label-text font-medium"
-                            >
-                                Last Name
-                            </label>
-                            <input
-                                type="text"
-                                id="lastName"
-                                name="lastName"
-                                value={formData.lastName}
-                                onChange={handleChange}
-                                onBlur={handleBlur}
-                                placeholder="Doe"
-                                className={`input input-bordered w-full ${
-                                    errors.lastName ? "input-error" : ""
-                                }`}
-                            />
-                            {errors.lastName && (
-                                <span className="text-error text-xs mt-1">
-                                    {errors.lastName}
-                                </span>
-                            )}
-                        </div>
+                        <Input
+                            id="firstName"
+                            required={true}
+                            label="First Name"
+                            placeholder="John"
+                            value={formData.firstName}
+                            onHandleChange={handleChange}
+                            onHandleBlur={handleBlur}
+                            error={errors.firstName}
+                        />
+                        <Input
+                            id="lastName"
+                            required={true}
+                            label="Last Name"
+                            placeholder="Doe"
+                            value={formData.lastName}
+                            onHandleChange={handleChange}
+                            onHandleBlur={handleBlur}
+                            error={errors.lastName}
+                        />
                     </div>
-
                     <div className="flex flex-col">
                         <label
                             className="label label-text font-medium"
                             htmlFor="email"
                         >
-                            Email <span className="text-error">*</span>
+                            Email{" "}
+                            {isEdit ? (
+                                <span className="text-xs text-base-content/50 font-normal">
+                                    (Cannot be changed)
+                                </span>
+                            ) : (
+                                <span className="text-error">*</span>
+                            )}
                         </label>
                         <input
                             id="email"
@@ -234,9 +353,12 @@ const SignUp = () => {
                             onChange={handleChange}
                             onBlur={handleBlur}
                             autoComplete="email"
+                            disabled={isEdit}
                             className={`input input-bordered w-full ${
-                                errors.emailId ? "input-error" : ""
-                            }`}
+                                isEdit
+                                    ? "opacity-75 cursor-not-allowed bg-base-200"
+                                    : ""
+                            } ${errors.emailId ? "input-error" : ""}`}
                             placeholder="john.doe@example.com"
                         />
                         {errors.emailId && (
@@ -246,68 +368,54 @@ const SignUp = () => {
                         )}
                     </div>
 
-                    <div className="flex flex-col">
-                        <label
-                            className="label label-text font-medium"
-                            htmlFor="password"
-                        >
-                            Password <span className="text-error">*</span>
-                        </label>
-                        <input
-                            id="password"
-                            name="password"
-                            type="password"
-                            className={`input input-bordered w-full ${
-                                errors.password ? "input-error" : ""
-                            }`}
-                            placeholder="Password (e.g. Password@123)"
-                            value={formData.password}
-                            onChange={handleChange}
-                            onBlur={handleBlur}
-                            autoComplete="new-password"
-                        />
-                        {errors.password && (
-                            <span className="text-error text-xs mt-1">
-                                {errors.password}
-                            </span>
-                        )}
-                    </div>
+                    {!isEdit && (
+                        <>
+                            <Password
+                                required={true}
+                                label={"Password"}
+                                id="password"
+                                value={formData.password}
+                                placeholder="Password (e.g. Password@123)"
+                                onHandleChange={handleChange}
+                                onHandleBlur={handleBlur}
+                                error={errors.password}
+                            />
+                            <Password
+                                required={true}
+                                label={"Re-enter Password"}
+                                id="re_password"
+                                value={formData.re_password}
+                                placeholder="Re-enter Password (e.g. Password@123)"
+                                onHandleChange={handleChange}
+                                onHandleBlur={handleBlur}
+                                error={errors.re_password}
+                            />
+                        </>
+                    )}
 
                     <div className="flex gap-3">
-                        <div className="flex flex-col w-1/2">
-                            <label
-                                htmlFor="age"
-                                className="label label-text font-medium"
-                            >
-                                Age
-                            </label>
-                            <input
-                                type="number"
-                                id="age"
-                                name="age"
-                                value={formData.age}
-                                onChange={handleChange}
-                                onBlur={handleBlur}
-                                placeholder="21"
-                                min="18"
-                                max="100"
-                                className={`input input-bordered w-full ${
-                                    errors.age ? "input-error" : ""
-                                }`}
-                            />
-                            {errors.age && (
-                                <span className="text-error text-xs mt-1">
-                                    {errors.age}
-                                </span>
-                            )}
-                        </div>
+                        <Input
+                            id="yearOfBirth"
+                            name="yearOfBirth"
+                            required={true}
+                            label={"Year of Birth"}
+                            value={formData.yearOfBirth}
+                            onChange={handleChange}
+                            onBlur={handleBlur}
+                            placeholder="2000"
+                            max={maxBirthYear}
+                            min={new Date().getFullYear() - 100}
+                            type="number"
+                            info={`Min. ${10} yrs old (${maxBirthYear} or earlier)`}
+                            error={errors.yearOfBirth}
+                        />
 
                         <div className="flex flex-col w-1/2">
                             <label
                                 htmlFor="gender"
                                 className="label label-text font-medium"
                             >
-                                Gender
+                                Gender<span className="text-error">*</span>
                             </label>
                             <select
                                 id="gender"
@@ -319,7 +427,7 @@ const SignUp = () => {
                                     errors.gender ? "select-error" : ""
                                 }`}
                             >
-                                <option value="Select One">Select One</option>
+                                <option value="">Select One</option>
                                 <option value="Male">Male</option>
                                 <option value="Female">Female</option>
                                 <option value="Others">Others</option>
@@ -360,6 +468,45 @@ const SignUp = () => {
                             </span>
                         )}
                     </div>
+                    {isEdit && (
+                        <>
+                            <div className="flex flex-col">
+                                <label
+                                    htmlFor="photoUrl"
+                                    className="label label-text font-medium"
+                                >
+                                    Photo URL
+                                </label>
+                                <input
+                                    type="url"
+                                    id="photoUrl"
+                                    name="photoUrl"
+                                    value={formData.photoUrl}
+                                    onChange={handleChange}
+                                    placeholder="https://example.com/avatar.jpg"
+                                    className="input input-bordered w-full"
+                                />
+                            </div>
+
+                            <div className="flex flex-col">
+                                <label
+                                    htmlFor="about"
+                                    className="label label-text font-medium"
+                                >
+                                    About (Bio)
+                                </label>
+                                <textarea
+                                    id="about"
+                                    name="about"
+                                    value={formData.about}
+                                    onChange={handleChange}
+                                    rows="3"
+                                    placeholder="Tell the community about your coding journey and interests..."
+                                    className="textarea textarea-bordered w-full"
+                                ></textarea>
+                            </div>
+                        </>
+                    )}
 
                     {errors.api && (
                         <div
@@ -370,30 +517,54 @@ const SignUp = () => {
                         </div>
                     )}
 
-                    <button
-                        className="btn btn-primary mt-2 w-full"
-                        type="submit"
-                        disabled={isLoading}
-                    >
-                        {isLoading ? (
-                            <>
-                                <span className="loading loading-spinner loading-xs"></span>
-                                Creating Account...
-                            </>
-                        ) : (
-                            "Sign Up"
-                        )}
-                    </button>
-
-                    <p className="mt-2 text-center text-sm">
-                        Already have an account?{" "}
-                        <Link
-                            to="/login"
-                            className="link link-primary font-medium"
+                    {successMsg && (
+                        <div
+                            role="alert"
+                            className="alert alert-success alert-soft text-sm py-2"
                         >
-                            Login
-                        </Link>
-                    </p>
+                            <span>{successMsg}</span>
+                        </div>
+                    )}
+
+                    <div className="flex flex-col gap-2 mt-2">
+                        <button
+                            className="btn btn-primary w-full"
+                            type="submit"
+                            disabled={isLoading}
+                        >
+                            {isLoading ? (
+                                <>
+                                    <span className="loading loading-spinner loading-xs"></span>
+                                    {isEdit
+                                        ? "Saving Changes..."
+                                        : "Creating Account..."}
+                                </>
+                            ) : isEdit ? (
+                                "Save Changes"
+                            ) : (
+                                "Sign Up"
+                            )}
+                        </button>
+
+                        {isEdit ? (
+                            <Link
+                                to="/profile"
+                                className="btn btn-ghost btn-sm w-full"
+                            >
+                                Cancel
+                            </Link>
+                        ) : (
+                            <p className="mt-2 text-center text-sm">
+                                Already have an account?{" "}
+                                <Link
+                                    to="/login"
+                                    className="link link-primary font-medium"
+                                >
+                                    Login
+                                </Link>
+                            </p>
+                        )}
+                    </div>
                 </form>
             </div>
         </div>
